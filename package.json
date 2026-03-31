@@ -4,9 +4,21 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PentagonCoder/game-server-websocket.git"
+  },
+  "bugs": {
+    "url": "https://github.com/PentagonCoder/game-server-websocket/issues"
+  },
+  "homepage": "https://github.com/PentagonCoder/game-server-websocket#readme",
+  "dependencies": {
+    "ws": "^8.13.0"
+  }
 }
