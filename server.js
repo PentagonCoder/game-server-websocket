@@ -42,7 +42,7 @@ wss.on('connection', (ws, request) => {
     if (index !== -1) {
       clients.splice(index, 1);
     }
-
+    
     broadcast();
   });
 
