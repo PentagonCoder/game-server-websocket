@@ -31,7 +31,9 @@ wss.on('connection', (ws, request) => {
     console.log(`${ws.username} updated state:`, ws.state);
 
     // broadcast to everyone
-    broadcast();
+    setInterval(() => {
+      broadcast()        // send everyone's state 20 times/sec
+    }, 50) 
   });
 
   // when user leaves
@@ -43,7 +45,9 @@ wss.on('connection', (ws, request) => {
       clients.splice(index, 1);
     }
     
-    broadcast();
+    setInterval(() => {
+      broadcast()        // send everyone's state 20 times/sec
+    }, 50) 
   });
 
   // error handling
