@@ -20,9 +20,9 @@ wss.on('connection', (ws, request) => {
 
   // add client
   clients.push(ws);
-  setInterval(() => {
+  
     broadcast()   
-  }, 50);
+ 
 
   // when message comes
   ws.on('message', (data) => {
