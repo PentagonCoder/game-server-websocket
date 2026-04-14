@@ -1,7 +1,8 @@
 const { WebSocketServer } = require('ws');
 const url = require('url');
 
-const wss = new WebSocketServer({ port: 8080 });
+const PORT = Number(process.env.PORT) || 8080;
+const wss = new WebSocketServer({ port: PORT });
 
 // store all clients
 const clients = [];
@@ -10,9 +11,15 @@ wss.on('connection', (ws, request) => {
   // get username from URL
   const { username } = url.parse(request.url, true).query;
 
+  if (!username) {
+    ws.close(1008, 'username is required');
+    return;
+  }
+
   // attach data to ws object (VERY IMPORTANT TRICK)
   ws.username = username;
-  ws.state = {};
+  ws.state = { x: 0, z: 0, rotation: 0 };
+  ws.hitCount = 0;
 
   console.log(`${username} connected`);
 
@@ -20,43 +27,60 @@ wss.on('connection', (ws, request) => {
 
   // add client
   clients.push(ws);
-  
-    broadcast()   
- 
+
+  broadcast();
 
   // when message comes
   ws.on('message', (data) => {
-    const parsedData = JSON.parse(data.toString());
+    let parsedData;
 
-    // update this user's state
-    ws.state = parsedData;
-     if (parsedData.type === "hit") {
+    try {
+      parsedData = JSON.parse(data.toString());
+    } catch (err) {
+      console.error('Invalid JSON from client:', ws.username);
+      return;
+    }
 
-      const targetUsername = parsedData.target
+    if (!parsedData || typeof parsedData !== 'object') {
+      return;
+    }
+
+    if (parsedData.type === 'hit') {
+      const targetUsername = parsedData.target;
+
+      if (!targetUsername) return;
 
       // find target player
-      const target = clients.find(c => c.username === targetUsername)
+      const target = clients.find((c) => c.username === targetUsername);
 
       if (target) {
-        target.hitCount += 1
+        target.hitCount += 1;
 
-        console.log(target.username, "hit:", target.hitCount)
+        console.log(target.username, 'hit:', target.hitCount);
 
         // 💀 OUT CONDITION
         if (target.hitCount >= 10) {
-          console.log(target.username + " OUT 💀")
+          console.log(`${target.username} OUT`);
 
-          target.close()   // disconnect player
+          // Use an app-specific close code so the client can force logout UX.
+          target.close(4001, 'eliminated');
         }
       }
-      return
+      return;
     }
-    console.log(`${ws.username} updated state:`, ws.state);
 
-    // broadcast to everyone
-    setInterval(() => {
-      broadcast()        // send everyone's state 20 times/sec
-    }, 50) 
+    const nextX = Number(parsedData.x);
+    const nextZ = Number(parsedData.z);
+    const nextRotation = Number(parsedData.rotation);
+
+    // update this user's state
+    ws.state = {
+      x: Number.isFinite(nextX) ? nextX : 0,
+      z: Number.isFinite(nextZ) ? nextZ : 0,
+      rotation: Number.isFinite(nextRotation) ? nextRotation : 0,
+    };
+
+    broadcast();
   });
 
   // when user leaves
@@ -67,10 +91,8 @@ wss.on('connection', (ws, request) => {
     if (index !== -1) {
       clients.splice(index, 1);
     }
-    
-    // setInterval(() => {
-      broadcast()        // send everyone's state 20 times/sec
-    // }, 50) 
+
+    broadcast();
   });
 
   // error handling
@@ -78,6 +100,8 @@ wss.on('connection', (ws, request) => {
     console.error('Socket error:', err.message);
   });
 });
+
+console.log(`WebSocket server running on ws://localhost:${PORT}`);
 
 // 🔥 broadcast function
 function broadcast() {
