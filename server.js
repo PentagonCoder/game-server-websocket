@@ -30,7 +30,27 @@ wss.on('connection', (ws, request) => {
 
     // update this user's state
     ws.state = parsedData;
+     if (parsedData.type === "hit") {
 
+      const targetUsername = parsedData.target
+
+      // find target player
+      const target = clients.find(c => c.username === targetUsername)
+
+      if (target) {
+        target.hitCount += 1
+
+        console.log(target.username, "hit:", target.hitCount)
+
+        // 💀 OUT CONDITION
+        if (target.hitCount >= 10) {
+          console.log(target.username + " OUT 💀")
+
+          target.close()   // disconnect player
+        }
+      }
+      return
+    }
     console.log(`${ws.username} updated state:`, ws.state);
 
     // broadcast to everyone
@@ -48,9 +68,9 @@ wss.on('connection', (ws, request) => {
       clients.splice(index, 1);
     }
     
-    setInterval(() => {
+    // setInterval(() => {
       broadcast()        // send everyone's state 20 times/sec
-    }, 50) 
+    // }, 50) 
   });
 
   // error handling
