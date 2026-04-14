@@ -47,7 +47,6 @@ wss.on('connection', (ws, request) => {
     }
 
     if (parsedData.type === 'hit') {
-      console.log(`${ws.username} killed ${parsed.target}`)
       const targetUsername = parsedData.target;
 
       if (!targetUsername) return;
@@ -55,8 +54,18 @@ wss.on('connection', (ws, request) => {
       // find target player
       const target = clients.find((c) => c.username === targetUsername);
 
-      if (target && target.readyState === 1) {
-        target.send(JSON.stringify({ type: 'you_died' }));
+      if (target) {
+        target.hitCount += 1;
+        console.log(`${ws.username} hit ${target.username}: ${target.hitCount}/10`);
+
+        // 💀 OUT CONDITION
+        if (target.hitCount >= 10) {
+          console.log(`${target.username} OUT`);
+          if (target.readyState === 1) {
+            target.send(JSON.stringify({ type: 'you_died' }));
+          }
+          target.close();
+        }
       }
       return;
     }
