@@ -28,6 +28,7 @@ wss.on('connection', (ws, request) => {
   // add client
   clients.push(ws);
 
+  // broadcast immediately so existing players see the new player
   broadcast();
 
   // when message comes
@@ -46,6 +47,7 @@ wss.on('connection', (ws, request) => {
     }
 
     if (parsedData.type === 'hit') {
+      console.log(`${ws.username} killed ${parsed.target}`)
       const targetUsername = parsedData.target;
 
       if (!targetUsername) return;
@@ -53,33 +55,13 @@ wss.on('connection', (ws, request) => {
       // find target player
       const target = clients.find((c) => c.username === targetUsername);
 
-      if (target) {
-        target.hitCount += 1;
-
-        console.log(target.username, 'hit:', target.hitCount);
-
-        // 💀 OUT CONDITION
-        if (target.hitCount >= 10) {
-          console.log(`${target.username} OUT`);
-
-          // Use an app-specific close code so the client can force logout UX.
-          target.close(4001, 'eliminated');
-        }
+      if (target && target.readyState === 1) {
+        target.send(JSON.stringify({ type: 'you_died' }));
       }
       return;
     }
 
-    const nextX = Number(parsedData.x);
-    const nextZ = Number(parsedData.z);
-    const nextRotation = Number(parsedData.rotation);
-
-    // update this user's state
-    ws.state = {
-      x: Number.isFinite(nextX) ? nextX : 0,
-      z: Number.isFinite(nextZ) ? nextZ : 0,
-      rotation: Number.isFinite(nextRotation) ? nextRotation : 0,
-    };
-
+    ws.state = parsedData;
     broadcast();
   });
 
