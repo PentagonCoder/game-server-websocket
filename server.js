@@ -20,6 +20,7 @@ wss.on('connection', (ws, request) => {
 
   // add client
   clients.push(ws);
+  broadcast()   
 
   // when message comes
   ws.on('message', (data) => {
